@@ -16,42 +16,6 @@ public class kNearestNeighbors {
       this.train_path = train_path;    
    }
    
-   public void build_vectors() throws IOException {
-      
-      BufferedReader br = new BufferedReader(new FileReader(train_path));
-
-      String line = "";
-      String classLabel = "";
-      
-      while ((line = br.readLine()) != null) {
-         String[] tokens = line.split(" ");
-         classLabel = tokens[0];
-         
-         for (int i = 1; i < tokens.length; i++) {
-            String token = tokens[i];
-            String word = token.replaceAll(":[\\d]+", "");
-            int count = Integer.parseInt(token.replaceAll("[\\w]+:", ""));
-            
-            if (!word_counts.containsKey(word)) {
-               word_counts.put(word, count);
-            } else {    
-               word_counts.put(word, word_counts.get(word) + count);
-            }
-            
-            if (train_data.get(classLabel) == null) {
-               Map<String, Integer> temp = new HashMap<String, Integer>();
-               train_data.put(classLabel, temp);  
-            }
-            
-            if (train_data.get(classLabel).containsKey(word)) {
-               train_data.get(classLabel).put(word, train_data.get(classLabel).get(word) + count);
-            } else {
-               train_data.get(classLabel).put(word, count);
-            }
-         }
-      }
-   }
-   
    public void prediction(String test_path, int k_val, boolean isEuclidean, PrintStream sys) throws IOException {
       
       BufferedReader test_br = new BufferedReader(new FileReader(test_path));
@@ -137,21 +101,46 @@ public class kNearestNeighbors {
                 dist = cos_mult / (Math.sqrt(cos_ik) * Math.sqrt(cos_jk));
             }
             
-            System.out.println(classLabel + "\t" + train_line_num + "\t" + trainClassLabel + "\t" + dist);
+            // System.out.println(classLabel + "\t" + train_line_num + "\t" + trainClassLabel + "\t" + dist);
+            
+            String key = train_line_num + trainClassLabel;
+         
+            if (dist_tally.size() < k_val) {
+               dist_tally.put(key, dist);
+            } else {
+               dist_tally = pick_nearest(dist_tally, key, dist);
+            }
+            System.out.println(dist_tally.size());
          }
-
-         String key = train_line_num + trainClassLabel;
-         dist_tally.put(key, dist); 
-         Map<String, Integer> votes = pick_instances(dist_tally, k_val); 
-         print(votes, sys, classLabel);
+         
+         Map<String, Integer> sys_votes = new HashMap<String, Integer>();
+         sys_votes = convert(dist_tally);
+         print(sys_votes, sys, classLabel);
       }     
    }
    
-   private Map<String, Integer> pick_instances(Map<String, Double> dist_tally, int k_val) {   
-      Map<String, Integer> votes = new HashMap<String, Integer>();
-      return votes;
+   private Map<String, Double> pick_nearest(Map<String, Double> dist_tally, String new_key, double new_dist) {      
+      for (String key : dist_tally.keySet()) {
+         if (dist_tally.get(key) > new_dist) {
+            dist_tally.remove(key);
+            dist_tally.put(new_key, new_dist);
+            break;
+         }
+      }
+      return dist_tally;
    }
    
+   private Map<String, Integer> convert(Map<String, Double> dist_tally) {
+      Map<String, Integer> votes = new HashMap<String, Integer>();
+      for (String dist_key : dist_tally.keySet()) {
+         if (votes.get(dist_key) == null) {
+            votes.put(dist_key, 1);
+         } else {
+            votes.put(dist_key, votes.get(dist_key) + 1);
+         }
+      }
+      return votes;
+   }
    
    private void print(Map<String, Integer> votes, PrintStream sys, String correct_classLabel) {
       
