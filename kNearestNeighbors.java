@@ -13,7 +13,7 @@ public class kNearestNeighbors {
    private Set<String> classLabs = new TreeSet<String>();
    
    public kNearestNeighbors(String train_path) {
-      this.train_path = train_path;      
+      this.train_path = train_path;    
    }
    
    public void build_vectors() throws IOException {
@@ -36,9 +36,14 @@ public class kNearestNeighbors {
             int count = Integer.parseInt(token.replaceAll("[\\w]+:", ""));
             
             if (!word_counts.containsKey(classLabel)) {
-               word_counts.put(classLabel, count);
+               word_counts.put(word, count);
             } else {
-               word_counts.put(classLabel, word_counts.get(classLabel) + count);
+               word_counts.put(word, word_counts.get(classLabel) + count);
+            }
+            
+            if (train_data.get(classLabel) == null) {
+               Map<String, Integer> temp = new HashMap<String, Integer>();
+               train_data.put(classLabel, temp);  
             }
             
             if (train_data.get(classLabel).containsKey(word)) {
@@ -48,6 +53,7 @@ public class kNearestNeighbors {
             }
          }
       }
+      System.out.println(word_counts.size());
    }
    
    public void prediction(String test_path, int k_val, boolean isEuclidean, PrintStream sys) throws IOException {
@@ -87,27 +93,48 @@ public class kNearestNeighbors {
                String[] trainTokens = line.split(" ");
                trainClassLabel = trainTokens[0];
                
-               double dist = 0.0;
-               double cos_mult = 0.0;
-               double cos_ik = 0.0;
-               double cos_jk = 0.0;
+               Map<String, Integer> trainTokensCount = new HashMap<String, Integer>();
                
                for (int j = 1; j < trainTokens.length; j++) {
                   
                   String trainToken = trainTokens[j];
                   String trainWord = trainToken.replaceAll(":[\\d]+", "");
                   int trainCount = Integer.parseInt(token.replaceAll("[\\w]+:", ""));
+                  trainTokensCount.put(trainWord, trainCount);
                   
+               }
+                 
+               double dist = 0.0;
+               double cos_mult = 0.0;
+               double cos_ik = 0.0;
+               double cos_jk = 0.0;
+               
+               int word_total_count = 0;
+               if (word_counts.containsKey(word)) {
+                  word_total_count = word_counts.get(word);
+               }
+                  
+               int denominator = count + word_total_count;
+               if (trainTokensCount.containsKey(word)) {
                   if (isEuclidean) {
-                     double euc = (count / count + word_counts.get(word)) - (trainCount / count + word_counts.get(word));
+                     double euc = (count / denominator) - (trainTokensCount.get(word) / denominator);
                      double w_dist = euc * euc;
                      dist += w_dist;
                   } else {
-                     cos_mult += (count / count + word_counts.get(word)) * (trainCount / count + word_counts.get(word));
-                     cos_ik += (count / count + word_counts.get(word)) * (count / count + word_counts.get(word));
-                     cos_jk += (trainCount / count + word_counts.get(word)) * (trainCount / count + word_counts.get(word));
+                     cos_mult += (count / denominator) * (trainTokensCount.get(word) / denominator);
+                     cos_ik += (count / denominator) * (count / denominator);
+                     cos_jk += (trainTokensCount.get(word) / denominator) * (trainTokensCount.get(word) / denominator);
+                  }
+               } else {
+                  if (isEuclidean) {
+                     dist += (count / denominator) * (count / denominator);
+                  } else {
+                     cos_mult += 0;
+                     cos_ik += (count / denominator) * (count / denominator);
+                     cos_jk += 0;
                   }
                }
+               
                if (isEuclidean) {
                   dist = Math.sqrt(dist);
                } else {
