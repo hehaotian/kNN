@@ -104,42 +104,32 @@ public class kNearestNeighbors {
                trainTokensCount.put(trainWord, trainCount);
             }
             
-            for (String word : testTokensCount.keySet()) {               
-               int count = testTokensCount.get(word);               
+            for (String testWord : testTokensCount.keySet()) {               
+               int testCount = testTokensCount.get(testWord);
                
-               int word_total_count = 0;
-               if (word_counts.containsKey(word)) {
-                  word_total_count = word_counts.get(word);
-               }
+               for (String trainWord : trainTokensCount.keySet()) {
+                  int trainCount = trainTokensCount.get(trainWord);
                   
-               int denominator = count + word_total_count;
-               // System.out.println(denominator);
-               if (trainTokensCount.containsKey(word)) {
-                  if (isEuclidean) {
-                      
-                     System.out.println()
-                     double euc = (count / denominator) - (trainTokensCount.get(word) / denominator);
-                      
-                     double w_dist = euc * euc;
-                      System.out.println(euc + "\t" + w_dist);
-                     dist += w_dist;                     
+                  if (testWord.equals(trainWord)) {
+                     if (isEuclidean) {
+                        double euc = testCount - trainCount;
+                        dist += euc * euc;
+                     } else {
+                        cos_mult += testCount * trainCount;
+                        cos_ik += testCount * testCount;
+                        cos_jk += trainCount * trainCount;
+                     }
                   } else {
-                      System.out.println("yes1");
-                     cos_mult += (count / denominator) * (trainTokensCount.get(word) / denominator);
-                     cos_ik += (count / denominator) * (count / denominator);
-                     cos_jk += (trainTokensCount.get(word) / denominator) * (trainTokensCount.get(word) / denominator);
-                  }
-               } else {
-                  if (isEuclidean) {
-                     dist += (count / denominator) * (count / denominator);
-                  } else {
-                      System.out.println("yes2");
-                     cos_mult += 0;
-                     cos_ik += (count / denominator) * (count / denominator);
-                     cos_jk += 0;
+                     if (isEuclidean) {
+                        dist += testCount * testCount + trainCount * trainCount;
+                     } else {
+                        cos_mult = 0;
+                        cos_ik = testCount * testCount;
+                        cos_jk = trainCount * trainCount;
+                     }
                   }
                }
-            }
+            }     
             
             if (isEuclidean) {
                 dist = Math.sqrt(dist);
@@ -147,7 +137,7 @@ public class kNearestNeighbors {
                 dist = cos_mult / (Math.sqrt(cos_ik) * Math.sqrt(cos_jk));
             }
             
-            // System.out.println(classLabel + "\t" +  + "\t" + trainClassLabel + "\t" + dist);
+            System.out.println(classLabel + "\t" + train_line_num + "\t" + trainClassLabel + "\t" + dist);
          }
 
          String key = train_line_num + trainClassLabel;
