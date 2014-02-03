@@ -80,14 +80,12 @@ public class kNearestNeighbors {
          
          String trainLine = "";
          String trainClassLabel = "";
-          
          int train_line_num = 0;
          while ((line = train_br.readLine()) != null) {
                
             train_line_num ++;
             String[] trainTokens = line.split(" ");
             trainClassLabel = trainTokens[0];
-            System.out.println(trainClassLabel);
                
             Map<String, Integer> testTokensCount = new HashMap<String, Integer>();
             Map<String, Integer> trainTokensCount = new HashMap<String, Integer>();   
@@ -108,18 +106,25 @@ public class kNearestNeighbors {
             
             for (String word : testTokensCount.keySet()) {               
                int count = testTokensCount.get(word);               
+               
                int word_total_count = 0;
                if (word_counts.containsKey(word)) {
                   word_total_count = word_counts.get(word);
                }
                   
                int denominator = count + word_total_count;
+               // System.out.println(denominator);
                if (trainTokensCount.containsKey(word)) {
                   if (isEuclidean) {
+                      
+                     System.out.println()
                      double euc = (count / denominator) - (trainTokensCount.get(word) / denominator);
-                     double w_dist = euc * euc;                     
+                      
+                     double w_dist = euc * euc;
+                      System.out.println(euc + "\t" + w_dist);
                      dist += w_dist;                     
                   } else {
+                      System.out.println("yes1");
                      cos_mult += (count / denominator) * (trainTokensCount.get(word) / denominator);
                      cos_ik += (count / denominator) * (count / denominator);
                      cos_jk += (trainTokensCount.get(word) / denominator) * (trainTokensCount.get(word) / denominator);
@@ -128,20 +133,23 @@ public class kNearestNeighbors {
                   if (isEuclidean) {
                      dist += (count / denominator) * (count / denominator);
                   } else {
+                      System.out.println("yes2");
                      cos_mult += 0;
                      cos_ik += (count / denominator) * (count / denominator);
                      cos_jk += 0;
                   }
                }
-            }          
+            }
+            
+            if (isEuclidean) {
+                dist = Math.sqrt(dist);
+            } else {
+                dist = cos_mult / (Math.sqrt(cos_ik) * Math.sqrt(cos_jk));
+            }
+            
+            // System.out.println(classLabel + "\t" +  + "\t" + trainClassLabel + "\t" + dist);
          }
-         if (isEuclidean) {
-            dist = Math.sqrt(dist);
-         } else {
-            dist = cos_mult / (Math.sqrt(cos_ik) * Math.sqrt(cos_jk));
-         }
-         // System.out.println(trainClassLabel + "\t" + dist);
-// CHANGE NEEDING HERE
+
          String key = train_line_num + trainClassLabel;
          dist_tally.put(key, dist); 
          Map<String, Integer> votes = pick_instances(dist_tally, k_val); 
@@ -154,7 +162,6 @@ public class kNearestNeighbors {
       return votes;
    }
    
-// CHANGE NEEDING HERE
    
    private void print(Map<String, Integer> votes, PrintStream sys, String correct_classLabel) {
       
