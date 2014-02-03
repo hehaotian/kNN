@@ -6,8 +6,8 @@ public class kNearestNeighbors {
    
    private static String train_path;
    
-   private Map<String, Map<String, Integer>> train_data;
-   private static Map<String, Integer> word_counts;
+   private Map<String, Map<String, Integer>> train_data = new HashMap<String, Map<String, Integer>>();
+   private static Map<String, Integer> word_counts = new HashMap<String, Integer>();
    
    private Map<String, Map<String, Integer>> test_matrix;
    private Set<String> classLabs = new TreeSet<String>();
@@ -19,10 +19,7 @@ public class kNearestNeighbors {
    public void build_vectors() throws IOException {
       
       BufferedReader br = new BufferedReader(new FileReader(train_path));
-      
-      word_counts = new HashMap<String, Integer>();
-      train_data = new HashMap<String, Map<String, Integer>>();
-      
+
       String line = "";
       String classLabel = "";
       
@@ -35,10 +32,10 @@ public class kNearestNeighbors {
             String word = token.replaceAll(":[\\d]+", "");
             int count = Integer.parseInt(token.replaceAll("[\\w]+:", ""));
             
-            if (!word_counts.containsKey(classLabel)) {
+            if (!word_counts.containsKey(word)) {
                word_counts.put(word, count);
-            } else {
-               word_counts.put(word, word_counts.get(classLabel) + count);
+            } else {    
+               word_counts.put(word, word_counts.get(word) + count);
             }
             
             if (train_data.get(classLabel) == null) {
@@ -53,7 +50,6 @@ public class kNearestNeighbors {
             }
          }
       }
-      System.out.println(word_counts.size());
    }
    
    public void prediction(String test_path, int k_val, boolean isEuclidean, PrintStream sys) throws IOException {
@@ -74,41 +70,44 @@ public class kNearestNeighbors {
          sys.print("array:" + array_num + " " + classLabel);
          
          Map<String, Double> dist_tally = new HashMap<String, Double>();
-                  
-         for (int i = 1; i < tokens.length; i++) {
-
-            String token = tokens[i];
-            String word = token.replaceAll(":[\\d]+", "");
-            int count = Integer.parseInt(token.replaceAll("[\\w]+:", "")); 
+         
+         double dist = 0.0;
+         double cos_mult = 0.0;
+         double cos_ik = 0.0;
+         double cos_jk = 0.0;
             
-            BufferedReader train_br = new BufferedReader(new FileReader(test_path));
+         BufferedReader train_br = new BufferedReader(new FileReader(test_path));
+         
+         String trainLine = "";
+         String trainClassLabel = "";
+          
+         int train_line_num = 0;
+         while ((line = train_br.readLine()) != null) {
+               
+            train_line_num ++;
+            String[] trainTokens = line.split(" ");
+            trainClassLabel = trainTokens[0];
+            System.out.println(trainClassLabel);
+               
+            Map<String, Integer> testTokensCount = new HashMap<String, Integer>();
+            Map<String, Integer> trainTokensCount = new HashMap<String, Integer>();   
+                           
+            for (int i = 1; i < tokens.length; i++) {
+               String token = tokens[i];
+               String word = token.replaceAll(":[\\d]+", "");
+               int count = Integer.parseInt(token.replaceAll("[\\w]+:", ""));
+               testTokensCount.put(word, count);
+            }
+               
+            for (int j = 1; j < trainTokens.length; j++) {
+               String trainToken = trainTokens[j];
+               String trainWord = trainToken.replaceAll(":[\\d]+", "");
+               int trainCount = Integer.parseInt(trainToken.replaceAll("[\\w]+:", ""));
+               trainTokensCount.put(trainWord, trainCount);
+            }
             
-            String trainLine = "";
-            String trainClassLabel = "";
-            
-            int train_line_num = 0;
-            while ((line = train_br.readLine()) != null) {
-               
-               train_line_num ++;
-               String[] trainTokens = line.split(" ");
-               trainClassLabel = trainTokens[0];
-               
-               Map<String, Integer> trainTokensCount = new HashMap<String, Integer>();
-               
-               for (int j = 1; j < trainTokens.length; j++) {
-                  
-                  String trainToken = trainTokens[j];
-                  String trainWord = trainToken.replaceAll(":[\\d]+", "");
-                  int trainCount = Integer.parseInt(token.replaceAll("[\\w]+:", ""));
-                  trainTokensCount.put(trainWord, trainCount);
-                  
-               }
-                 
-               double dist = 0.0;
-               double cos_mult = 0.0;
-               double cos_ik = 0.0;
-               double cos_jk = 0.0;
-               
+            for (String word : testTokensCount.keySet()) {               
+               int count = testTokensCount.get(word);               
                int word_total_count = 0;
                if (word_counts.containsKey(word)) {
                   word_total_count = word_counts.get(word);
@@ -118,8 +117,8 @@ public class kNearestNeighbors {
                if (trainTokensCount.containsKey(word)) {
                   if (isEuclidean) {
                      double euc = (count / denominator) - (trainTokensCount.get(word) / denominator);
-                     double w_dist = euc * euc;
-                     dist += w_dist;
+                     double w_dist = euc * euc;                     
+                     dist += w_dist;                     
                   } else {
                      cos_mult += (count / denominator) * (trainTokensCount.get(word) / denominator);
                      cos_ik += (count / denominator) * (count / denominator);
@@ -134,19 +133,17 @@ public class kNearestNeighbors {
                      cos_jk += 0;
                   }
                }
-               
-               if (isEuclidean) {
-                  dist = Math.sqrt(dist);
-               } else {
-                  dist = cos_mult / (Math.sqrt(cos_ik) * Math.sqrt(cos_jk));
-               }
-// CHANGE NEEDING HERE
-               String key = train_line_num + trainClassLabel;
-               
-               
-               dist_tally.put(key, dist); 
-            }           
+            }          
          }
+         if (isEuclidean) {
+            dist = Math.sqrt(dist);
+         } else {
+            dist = cos_mult / (Math.sqrt(cos_ik) * Math.sqrt(cos_jk));
+         }
+         // System.out.println(trainClassLabel + "\t" + dist);
+// CHANGE NEEDING HERE
+         String key = train_line_num + trainClassLabel;
+         dist_tally.put(key, dist); 
          Map<String, Integer> votes = pick_instances(dist_tally, k_val); 
          print(votes, sys, classLabel);
       }     
