@@ -34,18 +34,17 @@ public class kNearestNeighbors {
          String[] tokens = line.split(" ");
          classLabel = tokens[0];
          sys.print("array:" + array_num + " " + classLabel);
-         
-         // stores k-nearest instances of training instances
-         Map<String, Double> dist_tally = new HashMap<String, Double>();
-         
-         double dist = 0.0;
-         
+
          // reads the training file   
          BufferedReader train_br = new BufferedReader(new FileReader(test_path));
          
          String trainLine = "";
          String trainClassLabel = "";
          int train_line_num = 0;
+         
+         // stores k-nearest instances of training instances
+         Map<String, Double> dist_tally = new HashMap<String, Double>();
+         double dist = 0.0;
          
          // reads each training instance
          while ((line = train_br.readLine()) != null) {
@@ -80,35 +79,33 @@ public class kNearestNeighbors {
             } else {
                dist = get_cosine(testTokensCount, trainTokensCount);
             }
-            
             // DEBUG:
             // System.out.println(classLabel + "\t" + train_line_num + "\t" + trainClassLabel + "\t" + dist);
             //
-            
-            // stores the training instance with the distance
-            String new_key = train_line_num + trainClassLabel;
-            if (dist_tally.size() < k_val) {
-               dist_tally.put(new_key, dist);
-            } else {
-               dist_tally = pick_nearest(dist_tally, new_key, dist);
-            }
-            
-            // DEBUG:
-            // System.out.println(dist_tally.size());
-            //
          }
-         
+                     
+         // stores the training instance with the distance
+         String new_key = train_line_num + trainClassLabel;
+         if (dist_tally.size() < k_val) {
+            dist_tally.put(new_key, dist);
+         } else {
+            dist_tally = pick_nearest(dist_tally, new_key, dist);
+         }
+            
          // DEBUG:
-         // for (String tr : dist_tally.keySet()) {
-         //   System.out.print(tr + "\t" + dist_tally.get(tr) + "\t");
-         // }
-         // System.out.println("");
+         // System.out.println(dist_tally.size());
          //
-         
+         // DEBUG:
+         for (String tr : dist_tally.keySet()) {
+           System.out.print(tr + "\t" + dist_tally.get(tr) + "\t");
+         }
+         System.out.println("");
+         //
+            
          // converts the top k instances map into a instances count map
          Map<String, Integer> sys_votes = new HashMap<String, Integer>();
          sys_votes = convert(dist_tally);
-         
+            
          // DEBUG:
          // System.out.println("FILE NAMES:");
          // for (String str : sys_votes.keySet()) {
@@ -124,18 +121,17 @@ public class kNearestNeighbors {
    
    private double get_euclidean(Map<String, Integer> test, Map<String, Integer> train) {
       double sum = 0.0;
-      for (String feature : test.keySet()) {
-         if (train.containsKey(feature)) {
-            double euc = test.get(feature) - train.get(feature);
-            sum += euc * euc;
+      Map<String, Integer> merged = merge(test, train);
+      for (String feat : merged.keySet()) {
+         double minus = 0;
+         if (train.containsKey(feat) && test.containsKey(feat)) {
+            minus = test.get(feat) - train.get(feat);
+         } else if (test.containsKey(feat)) {
+            minus = test.get(feat);
          } else {
-            sum += test.get(feature) * test.get(feature);
+            minus = train.get(feat);
          }
-      }
-      for (String feature : train.keySet()) {
-         if (!test.containsKey(feature)) {
-            sum += train.get(feature) * train.get(feature);
-         }
+         sum += Math.pow(minus, 2);
       }
       return sum;
    }
@@ -147,11 +143,11 @@ public class kNearestNeighbors {
       for (String feature : test.keySet()) {
          if (train.containsKey(feature)) {
             prod += test.get(feature) * train.get(feature);
-            sq1 += test.get(feature) * test.get(feature);
-            sq2 += train.get(feature) * train.get(feature);
+            sq1 += Math.pow(test.get(feature), 2);
+            sq2 += Math.pow(train.get(feature), 2);
          } else {
             prod += 0;
-            sq1 += test.get(feature) * test.get(feature);
+            sq1 += Math.pow(test.get(feature), 2);
             sq2 += 0;
          }
       }
