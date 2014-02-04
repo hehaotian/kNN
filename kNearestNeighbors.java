@@ -1,16 +1,16 @@
 import java.io.*;
 import java.util.*;
 import java.math.*;
+import java.lang.*;
 
 public class kNearestNeighbors {
    
    private static String train_path;
-   
    private Map<String, Map<String, Integer>> train_data = new HashMap<String, Map<String, Integer>>();
    private static Map<String, Integer> word_counts = new HashMap<String, Integer>();
-   
-   private Map<String, Map<String, Integer>> test_matrix;
+   private Map<String, Map<String, Integer>> test_matrix = new HashMap<String, Map<String, Integer>>();
    private Set<String> classLabs = new TreeSet<String>();
+   private Map<String, Integer> majority_votes = new HashMap<String, Integer>();
    
    public kNearestNeighbors(String train_path) {
       this.train_path = train_path;    
@@ -18,19 +18,18 @@ public class kNearestNeighbors {
    
    public void prediction(String test_path, int k_val, boolean isEuclidean, PrintStream sys) throws IOException {
       
+      sys.println("%%%%% test data:");
       BufferedReader test_br = new BufferedReader(new FileReader(test_path));
       
       String line = "";
       String classLabel = "";
-      
       int array_num = -1;
+      
       while ((line = test_br.readLine()) != null) {
          
          array_num ++;
          String[] tokens = line.split(" ");
          classLabel = tokens[0];
-         
-         sys.println("%%%%% test data:");
          sys.print("array:" + array_num + " " + classLabel);
          
          Map<String, Double> dist_tally = new HashMap<String, Double>();
@@ -50,6 +49,7 @@ public class kNearestNeighbors {
             train_line_num ++;
             String[] trainTokens = line.split(" ");
             trainClassLabel = trainTokens[0];
+            classLabs.add(trainClassLabel);
                
             Map<String, Integer> testTokensCount = new HashMap<String, Integer>();
             Map<String, Integer> trainTokensCount = new HashMap<String, Integer>();   
@@ -70,27 +70,37 @@ public class kNearestNeighbors {
             
             for (String testWord : testTokensCount.keySet()) {               
                int testCount = testTokensCount.get(testWord);
-               
-               for (String trainWord : trainTokensCount.keySet()) {
-                  int trainCount = trainTokensCount.get(trainWord);
                   
-                  if (testWord.equals(trainWord)) {
-                     if (isEuclidean) {
-                        double euc = testCount - trainCount;
-                        dist += euc * euc;
-                     } else {
-                        cos_mult += testCount * trainCount;
-                        cos_ik += testCount * testCount;
-                        cos_jk += trainCount * trainCount;
-                     }
+               if (trainTokensCount.containsKey(testWord)) {
+                  if (isEuclidean) {
+                     double euc = testCount - trainTokensCount.get(testWord);
+                     dist += euc * euc;
                   } else {
-                     if (isEuclidean) {
-                        dist += testCount * testCount + trainCount * trainCount;
-                     } else {
-                        cos_mult = 0;
-                        cos_ik = testCount * testCount;
-                        cos_jk = trainCount * trainCount;
-                     }
+                     cos_mult += testCount * trainTokensCount.get(testWord);
+                     cos_ik += testCount * testCount;
+                     cos_jk += trainTokensCount.get(testWord) * trainTokensCount.get(testWord);
+                  }
+               } else {
+                  if (isEuclidean) {
+                     dist += testCount * testCount;
+                  } else {
+                     cos_mult = 0;
+                     cos_ik = testCount * testCount;
+                     cos_jk = 0;
+                  }
+               }
+            }
+            
+            for (String trainWord : trainTokensCount.keySet()) {
+               int trainCount = trainTokensCount.get(trainWord);
+               
+               if (!testTokensCount.containsKey(trainWord)) {
+                  if (isEuclidean) {
+                     dist += trainCount * trainCount;
+                  } else {
+                     cos_mult = 0;
+                     cos_ik = 0;
+                     cos_jk = trainCount * trainCount;
                   }
                }
             }     
@@ -101,8 +111,6 @@ public class kNearestNeighbors {
                 dist = cos_mult / (Math.sqrt(cos_ik) * Math.sqrt(cos_jk));
             }
             
-            // System.out.println(classLabel + "\t" + train_line_num + "\t" + trainClassLabel + "\t" + dist);
-            
             String key = train_line_num + trainClassLabel;
          
             if (dist_tally.size() < k_val) {
@@ -110,7 +118,6 @@ public class kNearestNeighbors {
             } else {
                dist_tally = pick_nearest(dist_tally, key, dist);
             }
-            System.out.println(dist_tally.size());
          }
          
          Map<String, Integer> sys_votes = new HashMap<String, Integer>();
@@ -120,31 +127,57 @@ public class kNearestNeighbors {
    }
    
    private Map<String, Double> pick_nearest(Map<String, Double> dist_tally, String new_key, double new_dist) {      
-      for (String key : dist_tally.keySet()) {
-         if (dist_tally.get(key) > new_dist) {
-            dist_tally.remove(key);
+      if (dist_tally.size() > 1) {
+         double max = 0.0;
+         String max_key = "";
+         for (String key : dist_tally.keySet()) {
+            if (dist_tally.get(key) > max) {
+               max = dist_tally.get(key);
+               max_key = key;
+            }
+         }
+         if (max > new_dist) {
             dist_tally.put(new_key, new_dist);
-            break;
+            dist_tally.remove(max_key);
+         }
+         return dist_tally;
+      } else {
+         Map<String, Double> one_nearest = new HashMap<String, Double>();
+         for (String key : dist_tally.keySet()) {
+            if (dist_tally.get(key) > new_dist) {
+               return dist_tally;
+            } else {
+               one_nearest.put(new_key, new_dist);
+               return one_nearest;
+            }
          }
       }
-      return dist_tally;
+      return null;
    }
    
    private Map<String, Integer> convert(Map<String, Double> dist_tally) {
       Map<String, Integer> votes = new HashMap<String, Integer>();
       for (String dist_key : dist_tally.keySet()) {
-         if (votes.get(dist_key) == null) {
-            votes.put(dist_key, 1);
+         String real_key = dist_key.replaceAll("[0-9]+", "");
+         if (!votes.containsKey(real_key)) {
+            votes.put(real_key, 1);
          } else {
-            votes.put(dist_key, votes.get(dist_key) + 1);
+            votes.put(real_key, votes.get(real_key) + 1);
          }
-      }
+      }      
+      if (votes.size() < classLabs.size()) {
+         for (String cl : classLabs) {
+            if (!votes.containsKey(cl)) {
+               votes.put(cl, 0);
+            }
+         }
+      }      
       return votes;
    }
    
    private void print(Map<String, Integer> votes, PrintStream sys, String correct_classLabel) {
       
-      int votes_count = 0;
+      double votes_count = 0.0;
       for (String s : votes.keySet()) {
          votes_count += votes.get(s);
       }
@@ -154,7 +187,7 @@ public class kNearestNeighbors {
       
       Collections.sort(entryList, new Comparator<Map.Entry<String, Integer>>() {
          public int compare(Map.Entry<String, Integer> a, Map.Entry<String, Integer> b) {
-            return a.getValue() - b.getValue();
+            return b.getValue() - a.getValue();
          }
       }
       );
@@ -162,7 +195,8 @@ public class kNearestNeighbors {
       int counter = 0;
       for (Map.Entry<String, Integer> a: entryList) {
          String key = "" + a.getKey();
-         sys.print(" " + a.getKey() + " " + a.getValue());
+         double prob = a.getValue() * 1.0 / votes_count;
+         sys.print(" " + a.getKey().replaceAll("[0-9]+", "") + " " + prob);
          counter ++;
          if (counter == 1) {
             if (!test_matrix.containsKey(correct_classLabel)) {
@@ -174,6 +208,7 @@ public class kNearestNeighbors {
             }
          }
       }
+      sys.println("");
    }
    
    public void confusion_matrix() throws IOException {
