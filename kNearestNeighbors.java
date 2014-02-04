@@ -41,6 +41,7 @@ public class kNearestNeighbors {
          String trainLine = "";
          String trainClassLabel = "";
          int train_line_num = 0;
+         
          while ((line = train_br.readLine()) != null) {
                
             train_line_num ++;
@@ -71,35 +72,58 @@ public class kNearestNeighbors {
                dist = get_cosine(testTokensCount, trainTokensCount);
             }
             
-            String key = train_line_num + trainClassLabel;
-                     
+            // DEBUG:
+            System.out.println(classLabel + "\t" + train_line_num + "\t" + trainClassLabel + "\t" + dist);
+            //
+            
+            String new_key = train_line_num + trainClassLabel;
             if (dist_tally.size() < k_val) {
-               dist_tally.put(key, dist);
+               dist_tally.put(new_key, dist);
             } else {
-               dist_tally = pick_nearest(dist_tally, key, dist);
+               dist_tally = pick_nearest(dist_tally, new_key, dist);
             }
+            
+            // DEBUG:
+            // System.out.println(dist_tally.size());
+            //
          }
+         
+         // DEBUG:
+         // for (String tr : dist_tally.keySet()) {
+         //   System.out.print(tr + "\t" + dist_tally.get(tr) + "\t");
+         // }
+         // System.out.println("");
+         //
          
          Map<String, Integer> sys_votes = new HashMap<String, Integer>();
          sys_votes = convert(dist_tally);
+         
+         // DEBUG:
+         // System.out.println("FILE NAMES:");
+         // for (String str : sys_votes.keySet()) {
+         //   System.out.print(str + "\t" + sys_votes.get(str) + "\t");
+         // }
+         // System.out.println("");
+         //
+         
          print(sys_votes, sys, classLabel);
       }     
    }
    
    private double get_euclidean(Map<String, Integer> test, Map<String, Integer> train) {
       double sum = 0.0;
-      Map<String, Integer> two_docs = new HashMap<String, Integer>();
-      two_docs = merge(test, train);
-      for (String feature : two_docs.keySet()) {
-         double minus = 0.0;
-         if (test.containsKey(feature) && train.containsKey(feature)) {
-            minus = test.get(feature) - train.get(feature);
-         } else if (test.containsKey(feature)) {
-            minus = test.get(feature);
+      for (String feature : test.keySet()) {
+         if (train.containsKey(feature)) {
+            double euc = test.get(feature) - train.get(feature);
+            sum += euc * euc;
          } else {
-            minus = train.get(feature);
+            sum += test.get(feature) * test.get(feature);
          }
-         sum += minus * minus;
+      }
+      for (String feature : train.keySet()) {
+         if (!test.containsKey(feature)) {
+            sum += train.get(feature) * train.get(feature);
+         }
       }
       return Math.sqrt(sum);
    }
@@ -111,16 +135,24 @@ public class kNearestNeighbors {
       for (String feature : test.keySet()) {
          if (train.containsKey(feature)) {
             prod += test.get(feature) * train.get(feature);
+            sq1 += test.get(feature) * test.get(feature);
+            sq2 += train.get(feature) * train.get(feature);
+         } else {
+            prod += 0;
+            sq1 += test.get(feature) * test.get(feature);
+            sq2 += 0;
          }
-         sq1 += test.get(feature) * test.get(feature);
       }
       for (String feature : train.keySet()) {
-         sq2 += train.get(feature) * train.get(feature);
+         if (!test.containsKey(feature)) {
+            prod += 0;
+            sq1 += 0;
+            sq2 += train.get(feature) * train.get(feature);
+         }
       }
       return prod / (Math.sqrt(sq1) * Math.sqrt(sq2));
    }
-      
-   
+       
    private Map<String, Integer> merge(Map<String, Integer> test, Map<String, Integer> train) {
       for (String s : train.keySet()) {
          if (!test.containsKey(s)) {
@@ -150,7 +182,7 @@ public class kNearestNeighbors {
       } else {
          Map<String, Double> one_nearest = new HashMap<String, Double>();
          for (String key : dist_tally.keySet()) {
-            if (dist_tally.get(key) > new_dist) {
+            if (dist_tally.get(key) <= new_dist) {
                return dist_tally;
             } else {
                one_nearest.put(new_key, new_dist);
