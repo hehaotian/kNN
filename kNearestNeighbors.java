@@ -74,7 +74,7 @@ public class kNearestNeighbors {
             }
             
             // DEBUG:
-            System.out.println(classLabel + "\t" + train_line_num + "\t" + trainClassLabel + "\t" + dist);
+            // System.out.println(classLabel + "\t" + train_line_num + "\t" + trainClassLabel + "\t" + dist);
             //
             
             String new_key = train_line_num + trainClassLabel;
