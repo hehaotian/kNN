@@ -67,6 +67,7 @@ public class kNearestNeighbors {
             }
             
             if (isEuclidean) {
+               System.out.println("yes! it's euclidean.");
                dist = get_euclidean(testTokensCount, trainTokensCount);
             } else {
                dist = get_cosine(testTokensCount, trainTokensCount);
