@@ -1,0 +1,9 @@
+Confusion matrix for the test data:
+row is the truth, column is the system output
+
+	talk.politics.guns talk.politics.mideast talk.politics.misc 
+talk.politics.guns 52 48 0 
+talk.politics.mideast 78 21 1 
+talk.politics.misc 54 46 0 
+
+ Test accuracy=0.24333333333333335

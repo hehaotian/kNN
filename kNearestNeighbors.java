@@ -67,7 +67,7 @@ public class kNearestNeighbors {
             }
             
             if (isEuclidean) {
-               System.out.println("yes! it's euclidean.");
+               // System.out.println("yes! it's euclidean.");
                dist = get_euclidean(testTokensCount, trainTokensCount);
             } else {
                dist = get_cosine(testTokensCount, trainTokensCount);
@@ -126,7 +126,7 @@ public class kNearestNeighbors {
             sum += train.get(feature) * train.get(feature);
          }
       }
-      return Math.sqrt(sum);
+      return sum;
    }
    
    private double get_cosine(Map<String, Integer> test, Map<String, Integer> train) {
@@ -233,19 +233,20 @@ public class kNearestNeighbors {
       
       int counter = 0;
       for (Map.Entry<String, Integer> a: entryList) {
-         String key = "" + a.getKey();
+         String key = "" + a.getKey().replaceAll("[0-9]+", "");
          double prob = a.getValue() * 1.0 / votes_count;
-         sys.print(" " + a.getKey().replaceAll("[0-9]+", "") + " " + prob);
-         counter ++;
-         if (counter == 1) {
+         if (counter == 0) {
             if (!test_matrix.containsKey(correct_classLabel)) {
                test_matrix.put(correct_classLabel, new HashMap<String, Integer>());
-            } else if (test_matrix.get(correct_classLabel).containsKey(key)) {
+            }
+            if (test_matrix.get(correct_classLabel).containsKey(key)) {
                test_matrix.get(correct_classLabel).put(key, test_matrix.get(correct_classLabel).get(key) + 1);
             } else {
                test_matrix.get(correct_classLabel).put(key, 1);
             }
          }
+         sys.print(" " + key + " " + prob);
+         counter ++;
       }
       sys.println("");
    }
