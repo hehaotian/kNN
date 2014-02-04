@@ -24,6 +24,6 @@ public class build_kNN {
         
         kNearestNeighbors knn = new kNearestNeighbors(train_path);
         knn.prediction(test_path, k_val, isEuclidean, sys);
-        // knn.confusion_matrix();
+        knn.confusion_matrix();
     }
 }

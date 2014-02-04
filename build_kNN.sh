@@ -1,4 +1,4 @@
 #!/bin/sh
 
 javac *.java
-java build_kNN $@
+java -Xmx2048m build_kNN $@

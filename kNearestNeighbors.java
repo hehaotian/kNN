@@ -7,7 +7,7 @@ public class kNearestNeighbors {
    
    private static String train_path;
    private Map<String, Map<String, Integer>> train_data = new HashMap<String, Map<String, Integer>>();
-   private static Map<String, Integer> word_counts = new HashMap<String, Integer>();
+   private Set<String> feature_counts = new TreeSet<String>();
    private Map<String, Map<String, Integer>> test_matrix = new HashMap<String, Map<String, Integer>>();
    private Set<String> classLabs = new TreeSet<String>();
    private Map<String, Integer> majority_votes = new HashMap<String, Integer>();
@@ -23,20 +23,30 @@ public class kNearestNeighbors {
       // reads the test file
       BufferedReader test_br = new BufferedReader(new FileReader(test_path));
       
-      String line = "";
-      String classLabel = "";
-      int array_num = -1;
+      String testLine = "";
+      String testClassLabel = "";
+      int test_line_num = -1;
       
       // reads each test instance
-      while ((line = test_br.readLine()) != null) {
+      while ((testLine = test_br.readLine()) != null) {
          
-         array_num ++;
-         String[] tokens = line.split(" ");
-         classLabel = tokens[0];
-         sys.print("array:" + array_num + " " + classLabel);
-
+         test_line_num ++;
+         // System.out.println(testLine + "testLine" + test_line_num);
+         String[] tokens = testLine.split(" ");
+         testClassLabel = tokens[0];
+         sys.print("array:" + test_line_num + " " + testClassLabel);
+         
+         Map<String, Integer> testTokensCount = new HashMap<String, Integer>();
+         
+         for (int i = 1; i < tokens.length; i++) {
+            String token = tokens[i];
+            String word = token.replaceAll(":[\\d]+", "");
+            int count = Integer.parseInt(token.replaceAll("[\\w]+:", ""));
+            testTokensCount.put(word, count);
+         }
+         
          // reads the training file   
-         BufferedReader train_br = new BufferedReader(new FileReader(test_path));
+         BufferedReader train_br = new BufferedReader(new FileReader(train_path));
          
          String trainLine = "";
          String trainClassLabel = "";
@@ -44,63 +54,92 @@ public class kNearestNeighbors {
          
          // stores k-nearest instances of training instances
          Map<String, Double> dist_tally = new HashMap<String, Double>();
-         double dist = 0.0;
          
          // reads each training instance
-         while ((line = train_br.readLine()) != null) {
+         while ((trainLine = train_br.readLine()) != null) {
                
             train_line_num ++;
-            String[] trainTokens = line.split(" ");
+            String[] trainTokens = trainLine.split(" ");
             trainClassLabel = trainTokens[0];
             classLabs.add(trainClassLabel);
+            // System.out.println(trainLine + "trainLine" + train_line_num);
                
             // stores the feature vectors of the test and training instances
-            Map<String, Integer> testTokensCount = new HashMap<String, Integer>();
-            Map<String, Integer> trainTokensCount = new HashMap<String, Integer>();   
-                           
-            for (int i = 1; i < tokens.length; i++) {
-               String token = tokens[i];
-               String word = token.replaceAll(":[\\d]+", "");
-               int count = Integer.parseInt(token.replaceAll("[\\w]+:", ""));
-               testTokensCount.put(word, count);
-            }
+            Map<String, Integer> trainTokensCount = new HashMap<String, Integer>();
                
             for (int j = 1; j < trainTokens.length; j++) {
                String trainToken = trainTokens[j];
                String trainWord = trainToken.replaceAll(":[\\d]+", "");
+               feature_counts.add(trainWord);
                int trainCount = Integer.parseInt(trainToken.replaceAll("[\\w]+:", ""));
                trainTokensCount.put(trainWord, trainCount);
             }
             
-            // gets the distance value for this test and training instances pair
-            if (isEuclidean) {
-               // System.out.println("yes! it's euclidean.");
-               dist = get_euclidean(testTokensCount, trainTokensCount);
-            } else {
-               dist = get_cosine(testTokensCount, trainTokensCount);
-            }
-            // DEBUG:
-            // System.out.println(classLabel + "\t" + train_line_num + "\t" + trainClassLabel + "\t" + dist);
-            //
-         }
-                     
-         // stores the training instance with the distance
-         String new_key = train_line_num + trainClassLabel;
-         if (dist_tally.size() < k_val) {
-            dist_tally.put(new_key, dist);
-         } else {
-            dist_tally = pick_nearest(dist_tally, new_key, dist);
-         }
+            double dist = 0.0;
+            double sum = 0.0;
+            double cos_prod = 0.0;
+            double cos_ik = 0.0;
+            double cos_jk = 0.0;
             
-         // DEBUG:
-         // System.out.println(dist_tally.size());
-         //
-         // DEBUG:
-         for (String tr : dist_tally.keySet()) {
-           System.out.print(tr + "\t" + dist_tally.get(tr) + "\t");
+            for (String testWord : testTokensCount.keySet()) {
+               int testCount = testTokensCount.get(testWord);
+               
+               if (trainTokensCount.containsKey(testWord)) {
+                  int trainCount = trainTokensCount.get(testWord);
+                  if (isEuclidean) {
+                     double minus = testCount - trainCount;
+                     sum += minus * minus;
+                  } else {
+                     cos_prod += testCount * trainCount;
+                     cos_ik += testCount * testCount;
+                     cos_jk += trainCount * trainCount;
+                  }
+               } else {
+                  if (isEuclidean) {
+                     sum += testCount * testCount;
+                  } else {
+                     cos_ik += testCount * testCount;
+                  }
+               }
+            }
+            
+            for (String trainWord : trainTokensCount.keySet()) {
+               int trainCount = trainTokensCount.get(trainWord);
+               if (!testTokensCount.containsKey(trainWord)) {
+                  if (isEuclidean) {
+                     sum += trainCount * trainCount;
+                  } else {
+                     cos_jk += trainCount * trainCount;
+                  }
+               }
+            }
+            
+            if (isEuclidean) {
+               dist = Math.sqrt(sum);
+            } else {
+               dist = cos_prod / (Math.sqrt(cos_ik) * Math.sqrt(cos_jk));
+            }
+            
+            // DEBUG:
+            // System.out.println(testClassLabel + "\t" + train_line_num + "\t" + trainClassLabel + "\t" + dist);
+            //
+            
+            // stores the training instance with the distance
+            String new_key = train_line_num + trainClassLabel;
+            if (dist_tally.size() < k_val) {
+               dist_tally.put(new_key, dist);
+            } else {
+               dist_tally = pick_nearest(dist_tally, new_key, dist);
+            }
+            
+            // DEBUG:
+            // System.out.println("SMALLEST DISTANCE:");
+            // for (String str : dist_tally.keySet()) {
+            //    System.out.print(str + ":" + dist_tally.get(str) + "\t");
+            // }
+            // System.out.println("");
+            // 
          }
-         System.out.println("");
-         //
             
          // converts the top k instances map into a instances count map
          Map<String, Integer> sys_votes = new HashMap<String, Integer>();
@@ -109,69 +148,15 @@ public class kNearestNeighbors {
          // DEBUG:
          // System.out.println("FILE NAMES:");
          // for (String str : sys_votes.keySet()) {
-         //   System.out.print(str + "\t" + sys_votes.get(str) + "\t");
+         //    System.out.print(str + "\t" + sys_votes.get(str) + "\t");
          // }
          // System.out.println("");
          //
-         
          // prints the probabilities of each predicted instances
-         print(sys_votes, sys, classLabel);
+         print(sys_votes, sys, testClassLabel);
       }     
    }
-   
-   private double get_euclidean(Map<String, Integer> test, Map<String, Integer> train) {
-      double sum = 0.0;
-      Map<String, Integer> merged = merge(test, train);
-      for (String feat : merged.keySet()) {
-         double minus = 0;
-         if (train.containsKey(feat) && test.containsKey(feat)) {
-            minus = test.get(feat) - train.get(feat);
-         } else if (test.containsKey(feat)) {
-            minus = test.get(feat);
-         } else {
-            minus = train.get(feat);
-         }
-         sum += Math.pow(minus, 2);
-      }
-      return sum;
-   }
-   
-   private double get_cosine(Map<String, Integer> test, Map<String, Integer> train) {
-      double prod = 0.0;
-      double sq1 = 0.0;
-      double sq2 = 0.0;
-      for (String feature : test.keySet()) {
-         if (train.containsKey(feature)) {
-            prod += test.get(feature) * train.get(feature);
-            sq1 += Math.pow(test.get(feature), 2);
-            sq2 += Math.pow(train.get(feature), 2);
-         } else {
-            prod += 0;
-            sq1 += Math.pow(test.get(feature), 2);
-            sq2 += 0;
-         }
-      }
-      for (String feature : train.keySet()) {
-         if (!test.containsKey(feature)) {
-            prod += 0;
-            sq1 += 0;
-            sq2 += train.get(feature) * train.get(feature);
-         }
-      }
-      return prod / (Math.sqrt(sq1) * Math.sqrt(sq2));
-   }
-       
-   private Map<String, Integer> merge(Map<String, Integer> test, Map<String, Integer> train) {
-      for (String s : train.keySet()) {
-         if (!test.containsKey(s)) {
-            test.put(s, train.get(s));
-         } else {
-            test.put(s, test.get(s) + train.get(s));
-         }
-      }
-      return test;
-   }
-   
+
    private Map<String, Double> pick_nearest(Map<String, Double> dist_tally, String new_key, double new_dist) {      
       if (dist_tally.size() > 1) {
          double max = 0.0;
@@ -259,6 +244,8 @@ public class kNearestNeighbors {
    }
    
    public void confusion_matrix() throws IOException {
+      System.out.println("class_num=" + classLabs.size() + " feat_num=" + feature_counts.size());
+      System.out.println();
       System.out.println("Confusion matrix for the test data:");
       System.out.println("row is the truth, column is the system output\n");
       System.out.print("\t");
@@ -297,3 +284,58 @@ public class kNearestNeighbors {
       return correct_count * 1.0 / sum;
    }
 }
+//    
+//    private double get_euclidean(Map<String, Integer> test, Map<String, Integer> train) {
+//       double sum = 0.0;
+//       Map<String, Integer> merged = new HashMap<String, Integer>();
+//       merged = merge(test, train);
+//       for (String feat : merged.keySet()) {
+//          double minus = 0;
+//          if (train.containsKey(feat) && test.containsKey(feat)) {
+//             minus = test.get(feat) - train.get(feat);
+//          } else if (test.containsKey(feat)) {
+//             minus = test.get(feat);
+//          } else {
+//             minus = train.get(feat);
+//          }
+//          sum += minus * minus;
+//       }
+//       return Math.sqrt(sum);
+//    }
+//    
+//    private double get_cosine(Map<String, Integer> test, Map<String, Integer> train) {
+//       double prod = 0.0;
+//       double sq1 = 0.0;
+//       double sq2 = 0.0;
+//       for (String feature : test.keySet()) {
+//          if (train.containsKey(feature)) {
+//             prod += test.get(feature) * train.get(feature);
+//             sq1 += Math.pow(test.get(feature), 2);
+//             sq2 += Math.pow(train.get(feature), 2);
+//          } else {
+//             prod += 0;
+//             sq1 += Math.pow(test.get(feature), 2);
+//             sq2 += 0;
+//          }
+//       }
+//       for (String feature : train.keySet()) {
+//          if (!test.containsKey(feature)) {
+//             prod += 0;
+//             sq1 += 0;
+//             sq2 += train.get(feature) * train.get(feature);
+//          }
+//       }
+//       return prod / (Math.sqrt(sq1) * Math.sqrt(sq2));
+//    }
+//        
+//    private Map<String, Integer> merge(Map<String, Integer> test, Map<String, Integer> train) {
+//       for (String s : train.keySet()) {
+//          if (!test.containsKey(s)) {
+//             test.put(s, train.get(s));
+//          } else {
+//             test.put(s, test.get(s) + train.get(s));
+//          }
+//       }
+//       return test;
+//    }
+//    
