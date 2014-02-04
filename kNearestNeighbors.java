@@ -19,12 +19,15 @@ public class kNearestNeighbors {
    public void prediction(String test_path, int k_val, boolean isEuclidean, PrintStream sys) throws IOException {
       
       sys.println("%%%%% test data:");
+      
+      // reads the test file
       BufferedReader test_br = new BufferedReader(new FileReader(test_path));
       
       String line = "";
       String classLabel = "";
       int array_num = -1;
       
+      // reads each test instance
       while ((line = test_br.readLine()) != null) {
          
          array_num ++;
@@ -32,16 +35,19 @@ public class kNearestNeighbors {
          classLabel = tokens[0];
          sys.print("array:" + array_num + " " + classLabel);
          
+         // stores k-nearest instances of training instances
          Map<String, Double> dist_tally = new HashMap<String, Double>();
          
          double dist = 0.0;
-            
+         
+         // reads the training file   
          BufferedReader train_br = new BufferedReader(new FileReader(test_path));
          
          String trainLine = "";
          String trainClassLabel = "";
          int train_line_num = 0;
          
+         // reads each training instance
          while ((line = train_br.readLine()) != null) {
                
             train_line_num ++;
@@ -49,6 +55,7 @@ public class kNearestNeighbors {
             trainClassLabel = trainTokens[0];
             classLabs.add(trainClassLabel);
                
+            // stores the feature vectors of the test and training instances
             Map<String, Integer> testTokensCount = new HashMap<String, Integer>();
             Map<String, Integer> trainTokensCount = new HashMap<String, Integer>();   
                            
@@ -66,6 +73,7 @@ public class kNearestNeighbors {
                trainTokensCount.put(trainWord, trainCount);
             }
             
+            // gets the distance value for this test and training instances pair
             if (isEuclidean) {
                // System.out.println("yes! it's euclidean.");
                dist = get_euclidean(testTokensCount, trainTokensCount);
@@ -77,6 +85,7 @@ public class kNearestNeighbors {
             // System.out.println(classLabel + "\t" + train_line_num + "\t" + trainClassLabel + "\t" + dist);
             //
             
+            // stores the training instance with the distance
             String new_key = train_line_num + trainClassLabel;
             if (dist_tally.size() < k_val) {
                dist_tally.put(new_key, dist);
@@ -96,6 +105,7 @@ public class kNearestNeighbors {
          // System.out.println("");
          //
          
+         // converts the top k instances map into a instances count map
          Map<String, Integer> sys_votes = new HashMap<String, Integer>();
          sys_votes = convert(dist_tally);
          
@@ -107,6 +117,7 @@ public class kNearestNeighbors {
          // System.out.println("");
          //
          
+         // prints the probabilities of each predicted instances
          print(sys_votes, sys, classLabel);
       }     
    }
