@@ -35,9 +35,6 @@ public class kNearestNeighbors {
          Map<String, Double> dist_tally = new HashMap<String, Double>();
          
          double dist = 0.0;
-         double cos_mult = 0.0;
-         double cos_ik = 0.0;
-         double cos_jk = 0.0;
             
          BufferedReader train_br = new BufferedReader(new FileReader(test_path));
          
@@ -68,51 +65,14 @@ public class kNearestNeighbors {
                trainTokensCount.put(trainWord, trainCount);
             }
             
-            for (String testWord : testTokensCount.keySet()) {               
-               int testCount = testTokensCount.get(testWord);
-                  
-               if (trainTokensCount.containsKey(testWord)) {
-                  if (isEuclidean) {
-                     double euc = testCount - trainTokensCount.get(testWord);
-                     dist += euc * euc;
-                  } else {
-                     cos_mult += testCount * trainTokensCount.get(testWord);
-                     cos_ik += testCount * testCount;
-                     cos_jk += trainTokensCount.get(testWord) * trainTokensCount.get(testWord);
-                  }
-               } else {
-                  if (isEuclidean) {
-                     dist += testCount * testCount;
-                  } else {
-                     cos_mult = 0;
-                     cos_ik = testCount * testCount;
-                     cos_jk = 0;
-                  }
-               }
-            }
-            
-            for (String trainWord : trainTokensCount.keySet()) {
-               int trainCount = trainTokensCount.get(trainWord);
-               
-               if (!testTokensCount.containsKey(trainWord)) {
-                  if (isEuclidean) {
-                     dist += trainCount * trainCount;
-                  } else {
-                     cos_mult = 0;
-                     cos_ik = 0;
-                     cos_jk = trainCount * trainCount;
-                  }
-               }
-            }     
-            
             if (isEuclidean) {
-                dist = Math.sqrt(dist);
+               dist = get_euclidean(testTokensCount, trainTokensCount);
             } else {
-                dist = cos_mult / (Math.sqrt(cos_ik) * Math.sqrt(cos_jk));
+               dist = get_cosine(testTokensCount, trainTokensCount);
             }
             
             String key = train_line_num + trainClassLabel;
-         
+                     
             if (dist_tally.size() < k_val) {
                dist_tally.put(key, dist);
             } else {
@@ -124,6 +84,52 @@ public class kNearestNeighbors {
          sys_votes = convert(dist_tally);
          print(sys_votes, sys, classLabel);
       }     
+   }
+   
+   private double get_euclidean(Map<String, Integer> test, Map<String, Integer> train) {
+      double sum = 0.0;
+      Map<String, Integer> two_docs = new HashMap<String, Integer>();
+      two_docs = merge(test, train);
+      for (String feature : two_docs.keySet()) {
+         double minus = 0.0;
+         if (test.containsKey(feature) && train.containsKey(feature)) {
+            minus = test.get(feature) - train.get(feature);
+         } else if (test.containsKey(feature)) {
+            minus = test.get(feature);
+         } else {
+            minus = train.get(feature);
+         }
+         sum += minus * minus;
+      }
+      return Math.sqrt(sum);
+   }
+   
+   private double get_cosine(Map<String, Integer> test, Map<String, Integer> train) {
+      double prod = 0.0;
+      double sq1 = 0.0;
+      double sq2 = 0.0;
+      for (String feature : test.keySet()) {
+         if (train.containsKey(feature)) {
+            prod += test.get(feature) * train.get(feature);
+         }
+         sq1 += test.get(feature) * test.get(feature);
+      }
+      for (String feature : train.keySet()) {
+         sq2 += train.get(feature) * train.get(feature);
+      }
+      return prod / (Math.sqrt(sq1) * Math.sqrt(sq2));
+   }
+      
+   
+   private Map<String, Integer> merge(Map<String, Integer> test, Map<String, Integer> train) {
+      for (String s : train.keySet()) {
+         if (!test.containsKey(s)) {
+            test.put(s, train.get(s));
+         } else {
+            test.put(s, test.get(s) + train.get(s));
+         }
+      }
+      return test;
    }
    
    private Map<String, Double> pick_nearest(Map<String, Double> dist_tally, String new_key, double new_dist) {      

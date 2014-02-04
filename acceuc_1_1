@@ -3,7 +3,7 @@ row is the truth, column is the system output
 
 	talk.politics.guns talk.politics.mideast talk.politics.misc 
 talk.politics.guns 0 0 99 
-talk.politics.mideast 1 0 98 
-talk.politics.misc 0 3 96 
+talk.politics.mideast 0 0 99 
+talk.politics.misc 0 0 99 
 
- Test accuracy=0.32323232323232326
+ Test accuracy=0.3333333333333333

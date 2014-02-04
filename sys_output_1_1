@@ -185,7 +185,7 @@ array:182 talk.politics.mideast talk.politics.misc 1.0 talk.politics.mideast 0.0
 array:183 talk.politics.mideast talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
 array:184 talk.politics.mideast talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
 array:185 talk.politics.mideast talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
-array:186 talk.politics.mideast talk.politics.guns 1.0 talk.politics.misc 0.0 talk.politics.mideast 0.0
+array:186 talk.politics.mideast talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
 array:187 talk.politics.mideast talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
 array:188 talk.politics.mideast talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
 array:189 talk.politics.mideast talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
@@ -236,11 +236,11 @@ array:233 talk.politics.misc talk.politics.misc 1.0 talk.politics.mideast 0.0 ta
 array:234 talk.politics.misc talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
 array:235 talk.politics.misc talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
 array:236 talk.politics.misc talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
-array:237 talk.politics.misc talk.politics.mideast 1.0 talk.politics.misc 0.0 talk.politics.guns 0.0
+array:237 talk.politics.misc talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
 array:238 talk.politics.misc talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
 array:239 talk.politics.misc talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
 array:240 talk.politics.misc talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
-array:241 talk.politics.misc talk.politics.mideast 1.0 talk.politics.misc 0.0 talk.politics.guns 0.0
+array:241 talk.politics.misc talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
 array:242 talk.politics.misc talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
 array:243 talk.politics.misc talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
 array:244 talk.politics.misc talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
@@ -255,7 +255,7 @@ array:252 talk.politics.misc talk.politics.misc 1.0 talk.politics.mideast 0.0 ta
 array:253 talk.politics.misc talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
 array:254 talk.politics.misc talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
 array:255 talk.politics.misc talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
-array:256 talk.politics.misc talk.politics.mideast 1.0 talk.politics.misc 0.0 talk.politics.guns 0.0
+array:256 talk.politics.misc talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
 array:257 talk.politics.misc talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
 array:258 talk.politics.misc talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
 array:259 talk.politics.misc talk.politics.misc 1.0 talk.politics.mideast 0.0 talk.politics.guns 0.0
