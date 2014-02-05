@@ -76,48 +76,10 @@ public class kNearestNeighbors {
             }
             
             double dist = 0.0;
-            double sum = 0.0;
-            double cos_prod = 0.0;
-            double cos_ik = 0.0;
-            double cos_jk = 0.0;
-            
-            for (String testWord : testTokensCount.keySet()) {
-               int testCount = testTokensCount.get(testWord);
-               
-               if (trainTokensCount.containsKey(testWord)) {
-                  int trainCount = trainTokensCount.get(testWord);
-                  if (isEuclidean) {
-                     double minus = testCount - trainCount;
-                     sum += minus * minus;
-                  } else {
-                     cos_prod += testCount * trainCount;
-                     cos_ik += testCount * testCount;
-                     cos_jk += trainCount * trainCount;
-                  }
-               } else {
-                  if (isEuclidean) {
-                     sum += testCount * testCount;
-                  } else {
-                     cos_ik += testCount * testCount;
-                  }
-               }
-            }
-            
-            for (String trainWord : trainTokensCount.keySet()) {
-               int trainCount = trainTokensCount.get(trainWord);
-               if (!testTokensCount.containsKey(trainWord)) {
-                  if (isEuclidean) {
-                     sum += trainCount * trainCount;
-                  } else {
-                     cos_jk += trainCount * trainCount;
-                  }
-               }
-            }
-            
             if (isEuclidean) {
-               dist = Math.sqrt(sum);
+               dist = get_euclidean(testTokensCount, trainTokensCount);
             } else {
-               dist = cos_prod / (Math.sqrt(cos_ik) * Math.sqrt(cos_jk));
+               dist = get_cosine(testTokensCount, trainTokensCount);
             }
             
             // DEBUG:
@@ -269,7 +231,6 @@ public class kNearestNeighbors {
    }
     
    private double getAccuracy(Map<String, Map<String, Integer>> matrix) {
-      
       int correct_count = 0;
       int sum = 0;
       for (String str_1 : matrix.keySet()) {
@@ -283,59 +244,40 @@ public class kNearestNeighbors {
       }
       return correct_count * 1.0 / sum;
    }
-}
-//    
-//    private double get_euclidean(Map<String, Integer> test, Map<String, Integer> train) {
-//       double sum = 0.0;
-//       Map<String, Integer> merged = new HashMap<String, Integer>();
-//       merged = merge(test, train);
-//       for (String feat : merged.keySet()) {
-//          double minus = 0;
-//          if (train.containsKey(feat) && test.containsKey(feat)) {
-//             minus = test.get(feat) - train.get(feat);
-//          } else if (test.containsKey(feat)) {
-//             minus = test.get(feat);
-//          } else {
-//             minus = train.get(feat);
-//          }
-//          sum += minus * minus;
-//       }
-//       return Math.sqrt(sum);
-//    }
-//    
-//    private double get_cosine(Map<String, Integer> test, Map<String, Integer> train) {
-//       double prod = 0.0;
-//       double sq1 = 0.0;
-//       double sq2 = 0.0;
-//       for (String feature : test.keySet()) {
-//          if (train.containsKey(feature)) {
-//             prod += test.get(feature) * train.get(feature);
-//             sq1 += Math.pow(test.get(feature), 2);
-//             sq2 += Math.pow(train.get(feature), 2);
-//          } else {
-//             prod += 0;
-//             sq1 += Math.pow(test.get(feature), 2);
-//             sq2 += 0;
-//          }
-//       }
-//       for (String feature : train.keySet()) {
-//          if (!test.containsKey(feature)) {
-//             prod += 0;
-//             sq1 += 0;
-//             sq2 += train.get(feature) * train.get(feature);
-//          }
-//       }
-//       return prod / (Math.sqrt(sq1) * Math.sqrt(sq2));
-//    }
-//        
-//    private Map<String, Integer> merge(Map<String, Integer> test, Map<String, Integer> train) {
-//       for (String s : train.keySet()) {
-//          if (!test.containsKey(s)) {
-//             test.put(s, train.get(s));
-//          } else {
-//             test.put(s, test.get(s) + train.get(s));
-//          }
-//       }
-//       return test;
-//    }
-//    
+   
+   private double get_euclidean(Map<String, Integer> test, Map<String, Integer> train) {
+      double sum = 0.0;
+      for (String feature : test.keySet()) {
+         if (train.containsKey(feature)) {
+            double minus = test.get(feature) - train.get(feature);
+            sum += minus * minus;
+         } else {
+            sum += test.get(feature) * test.get(feature);
+         }
+      }
+      for (String feature : train.keySet()) {
+         if (!test.containsKey(feature)) {
+            sum += train.get(feature) * train.get(feature);
+         }
+      }
+      return sum;
+   }
+   
+   private double get_cosine(Map<String, Integer> test, Map<String, Integer> train) {
+      double prod = 0.0;
+      double sq1 = 0.0;
+      double sq2 = 0.0;
+      for (String feature : test.keySet()) {
+         if (train.containsKey(feature)) {
+            prod += test.get(feature) * train.get(feature);
+         }
+         sq1 += test.get(feature) * test.get(feature);
+      }
+      for (String feature : train.keySet()) {
+         sq2 += train.get(feature) * train.get(feature);
+      }
+      double deno = Math.sqrt(sq1) * Math.sqrt(sq2);
+      System.out.println(prod + "\t" + deno);
+      return prod / deno;
+   }
+}  
